@@ -1,5 +1,6 @@
 package hyperledger.besu.java.rest.client.config;
 
+import hyperledger.besu.java.rest.client.BeanWrappers.CredentialWrapper;
 import hyperledger.besu.java.rest.client.exception.ErrorCode;
 import hyperledger.besu.java.rest.client.exception.ServiceException;
 import java.util.List;
@@ -26,7 +27,7 @@ public class EthConfig {
 
   @RefreshScope
   @Bean
-  public Credentials getCredentials() {
+  public CredentialWrapper getCredentials() {
     Credentials credentials;
     try {
       // read the file and load the wallet
@@ -37,7 +38,7 @@ public class EthConfig {
       log.error("Error reading the wallet file: {}", e.getMessage());
       throw new ServiceException(ErrorCode.INITIALIZATION_FAILED, e.getCause().getMessage());
     }
-    return credentials;
+    return CredentialWrapper.builder().credentials(credentials).build();
   }
 
   @PostConstruct

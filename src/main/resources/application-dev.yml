@@ -1,5 +1,7 @@
 spring:
-  profiles.active: local
+  config:
+    activate:
+      on-profile: dev
 
 management:
   health.db.enabled: false
@@ -15,18 +17,18 @@ springdoc:
   api-docs:
     enabled: false
 spring:
-  profiles: local
+  profiles: dev
 besu:
   rpcEndpoints:
-    - http://localhost:8545
+  - http://validator1.v2pjxvwalnq.dev-1.wbp.in.wal-mart.com:80
   wallet:
-    path: walletfile
-    password: abcd
+    path: /Users/k0k07q2/Documents/Walmart/eth-connector/wallet-file/3198bc9c-6672-5ab3-d9954942343ae5b6.json
+    password: testpassword
   gasPrice: 1000
   gasLimit: 70000
   client:
     rest:
-      apikey: xyz
+      apikey: gh789hjj
 kafka:
   integration-points:
     -
@@ -40,3 +42,7 @@ kafka:
   event-listener:
     brokerHost: localhost:9093
     topic: besu-offchain-topic
+events:
+  block: true
+  smartContract:
+  - "0x6Ba72e179b7137B4E844A90af14f9Efb0bE3C11d"

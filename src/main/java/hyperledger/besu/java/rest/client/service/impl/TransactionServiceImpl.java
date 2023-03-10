@@ -4,6 +4,7 @@ import static hyperledger.besu.java.rest.client.exception.ErrorCode.HYPERLEDGER_
 import static hyperledger.besu.java.rest.client.exception.ErrorCode.HYPERLEDGER_BESU_TRANSACTION_ERROR;
 import static hyperledger.besu.java.rest.client.exception.ErrorCode.HYPERLEDGER_BESU_TRANSACTION_RECEIPT_ERROR;
 
+import hyperledger.besu.java.rest.client.BeanWrappers.CredentialWrapper;
 import hyperledger.besu.java.rest.client.config.EthConfig;
 import hyperledger.besu.java.rest.client.dto.Transaction;
 import hyperledger.besu.java.rest.client.exception.BesuTransactionException;
@@ -19,7 +20,6 @@ import java.util.concurrent.ExecutionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.web3j.abi.datatypes.Type;
-import org.web3j.crypto.Credentials;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionEncoder;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -39,20 +39,21 @@ public class TransactionServiceImpl implements TransactionService {
 
   private final EthConfig ethConfig;
   private final TransactionReceiptProcessor transactionReceiptProcessor;
-  private final Credentials credentials;
+  private final CredentialWrapper credentialWrapper;
 
   // these are default values found in the TransactionManager of Web3j
   private static final int DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH = 40;
   private static final long DEFAULT_POLLING_FREQUENCY = 15 * 1000;
 
-  public TransactionServiceImpl(final EthConfig ethConfig, final Credentials credentials) {
+  public TransactionServiceImpl(
+      final EthConfig ethConfig, final CredentialWrapper credentialWrapper) {
     this.ethConfig = ethConfig;
     this.transactionReceiptProcessor =
         new PollingTransactionReceiptProcessor(
             ethConfig.getWeb3jList().get(0),
             DEFAULT_POLLING_FREQUENCY,
             DEFAULT_POLLING_ATTEMPTS_PER_TX_HASH);
-    this.credentials = credentials;
+    this.credentialWrapper = credentialWrapper;
   }
 
   private BigInteger getNonce(String address) {
@@ -75,7 +76,8 @@ public class TransactionServiceImpl implements TransactionService {
   private EthSendTransaction sendTransaction(RawTransaction rawTransaction) {
     // Sign using the wallet that is initialized from the config
     // TODO: Change it to call a signer from the wallet
-    byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, credentials);
+    byte[] signedMessage =
+        TransactionEncoder.signMessage(rawTransaction, credentialWrapper.getCredentials());
     String hexMessage = Numeric.toHexString(signedMessage);
     log.debug("signed hex Message: {}" + hexMessage);
 
@@ -109,7 +111,7 @@ public class TransactionServiceImpl implements TransactionService {
               .get(0)
               .ethCall(
                   org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
-                      credentials.getAddress(),
+                      credentialWrapper.getCredentials().getAddress(),
                       transaction.getContractAddress(),
                       transaction.getEncodedFunction()),
                   DefaultBlockParameterName.LATEST)
@@ -147,7 +149,7 @@ public class TransactionServiceImpl implements TransactionService {
             .params(params)
             .gasPrice(BigInteger.valueOf(ethConfig.getEthProperties().getGasPrice()))
             .gasLimit(BigInteger.valueOf(ethConfig.getEthProperties().getGasLimit()))
-            .nonce(getNonce(credentials.getAddress()))
+            .nonce(getNonce(credentialWrapper.getCredentials().getAddress()))
             .build();
     EthSendTransaction ethSendTransaction = sendTransaction(transaction.getRawTransaction());
 
@@ -200,7 +202,7 @@ public class TransactionServiceImpl implements TransactionService {
             .params(params)
             .gasPrice(BigInteger.valueOf(ethConfig.getEthProperties().getGasPrice()))
             .gasLimit(BigInteger.valueOf(ethConfig.getEthProperties().getGasLimit()))
-            .nonce(getNonce(credentials.getAddress()))
+            .nonce(getNonce(credentialWrapper.getCredentials().getAddress()))
             .build();
     // read the response of transaction
     String response = readTransaction(transaction);
@@ -222,7 +224,7 @@ public class TransactionServiceImpl implements TransactionService {
             .compiledHexBinary(compiledHexString)
             .gasPrice(BigInteger.valueOf(ethConfig.getEthProperties().getGasPrice()))
             .gasLimit(BigInteger.valueOf(ethConfig.getEthProperties().getGasLimit()))
-            .nonce(getNonce(credentials.getAddress()))
+            .nonce(getNonce(credentialWrapper.getCredentials().getAddress()))
             .build();
     EthSendTransaction ethSendTransaction = sendTransaction(transaction.getContractTransaction());
 
